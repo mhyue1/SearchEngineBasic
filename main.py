@@ -18,6 +18,7 @@ from tkinter import *
 from urllib.request import urlopen
 import requests
 import webbrowser
+import html2text
 
 DEBUG = True;
 
@@ -282,9 +283,25 @@ def startSearch(entry, invIndex, frame):
 	finalToRet = getTheGoods(entry.get(), invIndex, 500)
 	top20 = queryReport(finalToRet)
 	for i in range(len(top20)):
-		link = Label(frame, text=top20[i], fg="blue", cursor = "hand2", width=75, anchor = W )
-		link.grid(row=i+2,column = 0, sticky=W)
+		link = Label(frame, text=top20[i], fg="blue", cursor = "hand2", width=75, anchor = W , background = "#9EC7C8")
+		link.grid(row=2*(i+2)-2,column = 0, sticky=W)
+		with urlopen("http://" + top20[i]) as response:
+			html = response.read(200)
+			textFromFile = text_from_html(html)
+			text = (html2text.html2text(html.decode('utf-8', errors = 'ignore')))
+			descrip = ''
+			if len(textFromFile) > 1:
+				descr = Label(frame, text=textFromFile, width=75, anchor = W , background = "#9EC7C8")
+			elif len(text) > 1:
+				descr = Label(frame, text=text, width=75, anchor = W , background = "#9EC7C8")
+			else:
+				descr = Label(frame, text="No info here", width=75, anchor=W, background="#9EC7C8")
+			descr.grid(row=2*(i+2)-1, column = 0, sticky=W)
+
 		link.bind("<Button>", open_web_browser(top20[i]))
+
+def frameConfig(canvas):
+    canvas.configure(scrollregion=canvas.bbox("all"))
 #RUN LIKE THIS:
 #python3 main.py [load|*] QUERY WORDS
 def main():
@@ -312,16 +329,23 @@ def main():
 	#GUI
 	root = Tk()
 	root.title("Search Engine")
-	frame = Frame(root)
 
-	labelText = StringVar()
-	label = Label(frame, text="CS121 Search Engine")
+	canvas = Canvas(root, borderwidth=0,height=400, width=600, background = "#9EC7C8")
+	frame = Frame(canvas, background = "#9EC7C8")
+	scrollbar = Scrollbar(root, orient="vertical", command=canvas.yview)
+	scrollbar.pack(side=RIGHT, fill=Y)
+	canvas.configure(yscrollcommand=scrollbar.set)
+	canvas.pack(side="left", fill="both", expand=True)
+	canvas.create_window((3, 3), window=frame, anchor="nw")
+
+	frame.bind("<Configure>", lambda event, canvas=canvas: canvas.configure(scrollregion=canvas.bbox("all")))
+
+	label = Label(frame, text="CS121 Search Engine", background = "#9EC7C8")
 	button = Button(frame, text="Search", command=lambda: startSearch(entry, invIndex, frame))
 	entry = Entry(frame, width=50)
 	entry.grid(row=1, pady=10, sticky=W, padx = 5)
 	button.grid(row=1, column=1, pady=10, sticky=W, padx = 5)
 	label.grid(row = 0)
-	frame.pack()
 	root.mainloop()
 	#queryReport(finalToRet)
 
